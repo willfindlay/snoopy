@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="img">
-    <file>assets/img/chad-1.jpg</file>
+    <file>assets/img/icons8-shutdown-96.png</file>
+    <file>assets/img/icons8-launch-96.png</file>
+    <file>assets/img/snoopy.png</file>
   </qresource>
 </RCC>
