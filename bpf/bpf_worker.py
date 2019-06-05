@@ -30,11 +30,7 @@ class BPFWorker(QObject):
         # syscall entry point
         def on_syscall(cpu, data, size):
             event = self.bpf["syscalls"].event(data)
-            s = f"System call {event.id} has been made!"
-            print(s)
-            # flag for exit if we detect a quit systemcall
-            if(event.id in [60, 261]):
-                self.done_work = True
+            s = f"System call {defs.SYSCALL[event.id]} has been made!"
             self.events.append(s)
         self.bpf["syscalls"].open_perf_buffer(on_syscall)
 
@@ -50,11 +46,11 @@ class BPFWorker(QObject):
     def tick(self):
         try:
             self.bpf.perf_buffer_poll(100)
-            send_events()
+            self.send_events()
         except:
             pass
         if self.done_work:
-            send_events()
+            self.send_events()
             self.bpf.cleanup()
-            self.sig_all_done.emit()
+            self.sig_all_done.emit(self.pid)
             self.deleteLater()

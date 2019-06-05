@@ -26,6 +26,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.path = ""
         self.olddirectory = ""
         self.directory = ""
+        self.subprocess_pid = None
         self.update_timer = QTimer(self)
         self.update_timer.start(100)
         self.console_output_stream = TextStream()
@@ -34,9 +35,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # setup the QProcess
         self.process = TracedProcess(self)
         self.process.errorOccurred.connect(self.executable_error)
-        self.process.sig_start_bpf_worker.connect(self.start_bpf_worker)
+        #self.process.sig_start_bpf_worker.connect(self.start_bpf_worker)
         self.process.readyReadStandardOutput.connect(self.stdout_ready)
         self.process.readyReadStandardError.connect(self.stderr_ready)
+        self.process.finished.connect(self.flag_bpf_worker_for_close)
+        self.process.started.connect(self.subprocess_started)
 
         # --- connect slots ---
         self.clear_console_button.pressed.connect(self.console_output.clear)
@@ -49,8 +52,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # --- slots ---
 
     def process_events(self, events):
-        for event in iter(self.events.popleft()):
-            self.event_log(event)
+        while True:
+            try:
+                event = events.popleft()
+                self.event_log(event)
+            except:
+                break
 
     def event_log(self, event):
         # TODO: make this append to the left hand side list view
@@ -64,12 +71,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.console_output.appendHtml("".join([defs.color(4), time_str, " ", defs.color(0), text]))
 
     def stdout_ready(self):
-        text = f"{defs.color(5)}Output from {defs.color(3)}{self.path} {defs.color(1)}{self.process.pid()}{defs.color(0)}"
+        text = f"{defs.color(5)}Output from {defs.color(3)}{self.path} {defs.color(4)}{self.process.pid()}{defs.color(0)}"
         text = "<br>".join([text, self.process.readAllStandardOutput().data().decode('utf-8')])
         self.console_output_stream.write(text)
 
     def stderr_ready(self):
-        text = f"{defs.color(5)}Error from {defs.color(3)}{self.path} {defs.color(1)}{self.process.pid()}{defs.color(9)}"
+        text = f"{defs.color(5)}Error from {defs.color(3)}{self.path} {defs.color(4)}{self.process.pid()}{defs.color(9)}"
         text = "<br>".join([text, self.process.readAllStandardError().data().decode('utf-8'), f"{defs.color(0)}"])
         self.console_output_stream.write(text)
 
@@ -79,12 +86,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         reply = dialog.exec_()
 
     def stop_bpf_worker(self,pid):
-        print("stopping worker")
+        self.console_log(f"{defs.color(9)}Stopping eBPF worker...")
         bpf_worker = self.bpf_workers[pid]
         self.bpf_workers[pid] = None
 
-    def start_bpf_worker(self, pid):
-        bpf_worker = BPFWorker(pid, self)
+    def flag_bpf_worker_for_close(self):
+        worker = self.bpf_workers[self.subprocess_pid]
+        worker.done_work = True
+        self.subprocess_pid = None
+
+    def start_bpf_worker(self):
+        self.console_log(f"{defs.color(10)}Starting eBPF worker...")
+        bpf_worker = BPFWorker(self.process.pid(), self)
         bpf_worker.sig_events.connect(self.process_events)
         bpf_worker.sig_all_done.connect(self.stop_bpf_worker)
         self.update_timer.timeout.connect(bpf_worker.tick)
@@ -99,6 +112,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.directory = self.olddirectory
         self.path = self.oldpath
 
+    def subprocess_started(self):
+        self.subprocess_pid = self.process.pid()
+
     def launch_executable(self, path, directory):
         self.oldpath = self.path
         self.olddirectory = self.directory
@@ -107,6 +123,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         args = path.split(" ")
         self.process.setWorkingDirectory(directory)
         self.process.start(args[0], args[1:])
+        self.start_bpf_worker()
 
 if __name__ == "__main__":
     # check privileges
