@@ -56,4 +56,5 @@ class BPFWorker(QObject):
         if self.done_work:
             send_events()
             self.bpf.cleanup()
+            self.sig_all_done.emit()
             self.deleteLater()

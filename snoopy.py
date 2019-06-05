@@ -3,7 +3,6 @@
 import re
 import sys
 import os
-import subprocess
 import datetime
 from collections import defaultdict
 from mainwindow import Ui_MainWindow
@@ -12,7 +11,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 import defs
 from dialogs import ExecutableDialog
-from subprocess_thread import SubprocessThread
+from tracedprocess import TracedProcess
 from text_stream import TextStream
 from bpf.bpf_worker import BPFWorker
 
@@ -23,10 +22,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # --- members ---
         self.bpf_workers = defaultdict(lambda: None)
+        self.oldpath = ""
         self.path = ""
+        self.olddirectory = ""
         self.directory = ""
         self.update_timer = QTimer(self)
         self.update_timer.start(100)
+        self.console_output_stream = TextStream()
+        self.console_output_stream.new_text.connect(self.console_log)
+
+        # setup the QProcess
+        self.process = TracedProcess(self)
+        self.process.errorOccurred.connect(self.executable_error)
+        self.process.sig_start_bpf_worker.connect(self.start_bpf_worker)
+        self.process.readyReadStandardOutput.connect(self.stdout_ready)
+        self.process.readyReadStandardError.connect(self.stderr_ready)
 
         # --- connect slots ---
         self.clear_console_button.pressed.connect(self.console_output.clear)
@@ -40,18 +50,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def process_events(self, events):
         for event in iter(self.events.popleft()):
-            self.log(event)
+            self.event_log(event)
 
-    def log(self, text):
-        try:
-            path = self.path
-        except:
-            path = ""
+    def event_log(self, event):
+        # TODO: make this append to the left hand side list view
+        print(event)
+
+    def console_log(self, text):
         now = datetime.datetime.now()
         time_str = now.strftime("[%m/%d/%Y %H:%M:%S]")
         text = "<br>".join(text.split("\n"))
         text = f"{defs.color(6)}^[{defs.color(0)}".join(text.split(""))
         self.console_output.appendHtml("".join([defs.color(4), time_str, " ", defs.color(0), text]))
+
+    def stdout_ready(self):
+        text = f"{defs.color(5)}Output from {defs.color(3)}{self.path} {defs.color(1)}{self.process.pid()}{defs.color(0)}"
+        text = "<br>".join([text, self.process.readAllStandardOutput().data().decode('utf-8')])
+        self.console_output_stream.write(text)
+
+    def stderr_ready(self):
+        text = f"{defs.color(5)}Error from {defs.color(3)}{self.path} {defs.color(1)}{self.process.pid()}{defs.color(9)}"
+        text = "<br>".join([text, self.process.readAllStandardError().data().decode('utf-8'), f"{defs.color(0)}"])
+        self.console_output_stream.write(text)
 
     def launch_executable_pressed(self):
         dialog = ExecutableDialog(self, command=self.path, directory=self.directory)
@@ -59,28 +79,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         reply = dialog.exec_()
 
     def stop_bpf_worker(self,pid):
-        print("STOPPING WORKER")
+        print("stopping worker")
         bpf_worker = self.bpf_workers[pid]
         self.bpf_workers[pid] = None
 
     def start_bpf_worker(self, pid):
-        print("starting bpf worker")
         bpf_worker = BPFWorker(pid, self)
         bpf_worker.sig_events.connect(self.process_events)
         bpf_worker.sig_all_done.connect(self.stop_bpf_worker)
         self.update_timer.timeout.connect(bpf_worker.tick)
         self.bpf_workers[bpf_worker.pid] = bpf_worker
 
+    def executable_error(self):
+        errStr = self.process.errorString()
+        if re.match("^chdir", errStr):
+            self.console_output_stream.write(f"{defs.color(9)} {errStr}: {defs.color(3)}{self.directory}")
+        else:
+            self.console_output_stream.write(f"{defs.color(9)} {errStr}: {defs.color(3)}{self.path}")
+        self.directory = self.olddirectory
+        self.path = self.oldpath
+
     def launch_executable(self, path, directory):
-        thread = SubprocessThread(self, path, directory)
-        thread.start()
-
-    def update_path(self, path):
+        self.oldpath = self.path
+        self.olddirectory = self.directory
         self.path = path
-
-    def update_directory(self, directory):
         self.directory = directory
-
+        args = path.split(" ")
+        self.process.setWorkingDirectory(directory)
+        self.process.start(args[0], args[1:])
 
 if __name__ == "__main__":
     # check privileges
