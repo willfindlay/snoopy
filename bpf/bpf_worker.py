@@ -5,34 +5,37 @@ import sys
 import os
 import time
 import ctypes as ct
+from collections import deque
 from bcc import BPF, USDT, utils
 from PySide2.QtCore import QObject, Signal
 import defs
 
-number = 1
-
 class BPFWorker(QObject):
     # --- signals ---
-    sig_clean = Signal()
-    sig_syscall_entry = Signal(ct.Structure)
+    sig_events = Signal(deque)
+    sig_all_done = Signal(int)
 
-    def __init__(self, pid):
-        super(BPFWorker, self).__init__()
-        global number
-        self.id = number
-        number = number + 1
-
+    def __init__(self, pid, parent):
+        super(BPFWorker, self).__init__(parent=parent)
+        self.events = deque() # maintain a deque for events
+        self.ready_to_delete = False
+        self.done_work = False
+        self.pid = pid
         text = self.load_bpf_code()
         text = text.replace("THE_PID",str(pid),1)
         self.bpf = BPF(text=text)
         self.register_perf_buffers()
 
     def register_perf_buffers(self):
+        # syscall entry point
         def on_syscall(cpu, data, size):
             event = self.bpf["syscalls"].event(data)
-            s = f"System call {event.sysnum} has been made!"
+            s = f"System call {event.id} has been made!"
             print(s)
-            self.sig_syscall_entry.emit(event)
+            # flag for exit if we detect a quit systemcall
+            if(event.id in [60, 261]):
+                self.done_work = True
+            self.events.append(s)
         self.bpf["syscalls"].open_perf_buffer(on_syscall)
 
     def load_bpf_code(self):
@@ -40,9 +43,17 @@ class BPFWorker(QObject):
             text = f.read()
         return text
 
-    def tick(self):
-        self.bpf.perf_buffer_poll(100)
+    def send_events(self):
+        self.sig_events.emit(self.events)
+        self.events.clear()
 
-    def cleanup(self):
-        self.bpf.cleanup()
-        self.sig_clean.emit()
+    def tick(self):
+        try:
+            self.bpf.perf_buffer_poll(100)
+            send_events()
+        except:
+            pass
+        if self.done_work:
+            send_events()
+            self.bpf.cleanup()
+            self.deleteLater()

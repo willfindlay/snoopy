@@ -330,8 +330,8 @@
 
 typedef struct
 {
-    u64 sysnum;
-    char name[SYSCALL_NAME_LEN];
+    u64 id;
+    u64 pid_tgid;
 }
 snoopy_sys_enter_data;
 

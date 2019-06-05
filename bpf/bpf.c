@@ -18,7 +18,7 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 
     if((u32)(pid_tgid >> 32) == PID)
     {
-        snoopy_sys_enter_data data = {.sysnum=syscall, .name=""};
+        snoopy_sys_enter_data data = {.id=syscall, .pid_tgid=pid_tgid};
 
         syscalls.perf_submit((struct pt_regs*)args, &data, sizeof(data));
     }
