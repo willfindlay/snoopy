@@ -13,44 +13,44 @@ import defs
 class BPFWorker(QObject):
     # --- signals ---
     sig_events = Signal(deque)
-    sig_all_done = Signal(int)
 
-    def __init__(self, pid, parent):
+    def __init__(self, parent=None):
         super(BPFWorker, self).__init__(parent=parent)
         self.events = deque() # maintain a deque for events
-        self.ready_to_delete = False
-        self.done_work = False
-        self.pid = pid
-        text = self.load_bpf_code()
-        text = text.replace("THE_PID",str(pid),1)
-        self.bpf = BPF(text=text)
-        self.register_perf_buffers()
 
     def register_perf_buffers(self):
         # syscall entry point
         def on_syscall(cpu, data, size):
             event = self.bpf["syscalls"].event(data)
-            s = f"System call {defs.SYSCALL[event.id]} has been made!"
-            self.events.append(s)
+            self.events.append((event, defs.Events.SYSENTRY))
         self.bpf["syscalls"].open_perf_buffer(on_syscall)
 
-    def load_bpf_code(self):
+    def start_working(self, pid):
+        # load the bpf program
         with open(defs.BPF_FILE, "r") as f:
             text = f.read()
-        return text
+        # sub in the pid
+        text = text.replace("THE_PID",str(pid),1)
+        # compile and start the bpf program
+        self.bpf = BPF(text=text)
+        self.register_perf_buffers()
+
+    def poll_events(self, timeout=100):
+        try:
+            self.bpf
+        except:
+            return
+        self.bpf.perf_buffer_poll(timeout)
+        self.send_events()
+
+    def stop_working(self):
+        self.poll_events()
+        self.bpf.cleanup()
+        self.bpf = None
 
     def send_events(self):
-        self.sig_events.emit(self.events)
+        self.sig_events.emit(self.events.copy())
         self.events.clear()
 
     def tick(self):
-        try:
-            self.bpf.perf_buffer_poll(100)
-            self.send_events()
-        except:
-            pass
-        if self.done_work:
-            self.send_events()
-            self.bpf.cleanup()
-            self.sig_all_done.emit(self.pid)
-            self.deleteLater()
+        self.poll_events()

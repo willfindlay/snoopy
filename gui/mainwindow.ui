@@ -132,9 +132,6 @@ background-position: bottom left;
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout_3">
-            <item row="1" column="0">
-             <widget class="QListView" name="listView"/>
-            </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_2">
               <property name="minimumSize">
@@ -147,6 +144,9 @@ background-position: bottom left;
                <string>Debugger</string>
               </property>
              </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QListView" name="debugger_view"/>
             </item>
            </layout>
           </widget>

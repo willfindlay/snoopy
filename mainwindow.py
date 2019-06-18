@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file './gui/mainwindow.ui',
 # licensing of './gui/mainwindow.ui' applies.
 #
-# Created: Mon Jun  3 02:11:00 2019
+# Created: Wed Jun  5 17:07:43 2019
 #      by: pyside2-uic  running on PySide2 5.12.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -82,13 +82,13 @@ class Ui_MainWindow(object):
         self.frame_2.setObjectName("frame_2")
         self.gridLayout_3 = QtWidgets.QGridLayout(self.frame_2)
         self.gridLayout_3.setObjectName("gridLayout_3")
-        self.listView = QtWidgets.QListView(self.frame_2)
-        self.listView.setObjectName("listView")
-        self.gridLayout_3.addWidget(self.listView, 1, 0, 1, 1)
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setMinimumSize(QtCore.QSize(0, 35))
         self.label_2.setObjectName("label_2")
         self.gridLayout_3.addWidget(self.label_2, 0, 0, 1, 1)
+        self.debugger_view = QtWidgets.QListView(self.frame_2)
+        self.debugger_view.setObjectName("debugger_view")
+        self.gridLayout_3.addWidget(self.debugger_view, 1, 0, 1, 1)
         self.verticalLayout.addWidget(self.frame_2)
         self.gridLayout_4.addLayout(self.verticalLayout, 0, 0, 1, 1)
         spacerItem1 = QtWidgets.QSpacerItem(20, 220, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)

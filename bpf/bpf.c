@@ -2,6 +2,25 @@
 
 #define PID THE_PID
 
+// TODO: maybe use some of this
+//struct alloc_info_t
+//{
+//        u64 size;
+//        u64 timestamp_ns;
+//        int stack_id;
+//};
+//
+//struct combined_alloc_info_t
+//{
+//        u64 total_size;
+//        u64 number_of_allocs;
+//};
+//BPF_HASH(sizes, u64, u64);
+//BPF_HASH(allocs, u64, struct alloc_info_t, 1000000);
+//BPF_HASH(memptrs, u64, u64);
+//BPF_STACK_TRACE(stack_traces, 10240);
+//BPF_HASH(combined_allocs, u64, struct combined_alloc_info_t, 10240);
+
 // perf buffer definitions {{{
 
 BPF_PERF_OUTPUT(syscalls);
@@ -30,7 +49,6 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 
 TRACEPOINT_PROBE(raw_syscalls, sys_exit)
 {
-
 
     return 0;
 }

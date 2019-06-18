@@ -1,5 +1,11 @@
 #! /usr/bin/env python3
 
+from enum import Enum
+
+# events from hashmaps and perf buffers
+class Events(Enum):
+    SYSENTRY = 1
+
 def color(n):
     global COLORS
     return "".join(["<font color=\"", COLORS[n], "\">"])
@@ -33,6 +39,7 @@ def init():
     "#333333"  # 16 - black
     ]
 
+    # map syscall id to name
     SYSCALL = {
     0: "READ",
     1: "WRITE",
@@ -347,5 +354,17 @@ def init():
     310: "PROCESS_VM_READV",
     311: "PROCESS_VM_WRITEV",
     312: "KCMP",
-    313: "FINIT_MODULE"
+    313: "FINIT_MODULE",
+    317: "SYS_SECCOMP",
+    318: "SYS_GETRANDOM",
+    319: "SYS_MEMFD_CREATE",
+    320: "SYS_KEXEC_FILE_LOAD",
+    321: "SYS_BPF",
+    322: "STUB_EXECVEAT",
+    323: "USERFAULTFD",
+    324: "MEMBARRIER",
+    325: "MLOCK2",
+    326: "COPY_FILE_RANGE",
+    327: "PREADV2",
+    328: "PWRITEV2"
     }

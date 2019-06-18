@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file './gui/executabledialog.ui',
 # licensing of './gui/executabledialog.ui' applies.
 #
-# Created: Mon Jun  3 02:11:00 2019
+# Created: Wed Jun  5 17:07:43 2019
 #      by: pyside2-uic  running on PySide2 5.12.0
 #
 # WARNING! All changes made in this file will be lost!

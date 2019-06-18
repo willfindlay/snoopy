@@ -3,6 +3,8 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#include <uapi/linux/ptrace.h>
+
 // syscall definitions {{{
 #define SYS_READ 0
 #define SYS_WRITE 1
