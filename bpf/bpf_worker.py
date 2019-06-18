@@ -23,7 +23,7 @@ class BPFWorker(QObject):
         def on_syscall(cpu, data, size):
             event = self.bpf["syscalls"].event(data)
             self.events.append((event, defs.Events.SYSENTRY))
-        self.bpf["syscalls"].open_perf_buffer(on_syscall)
+        self.bpf["syscalls"].open_perf_buffer(on_syscall, 128)
 
     def start_working(self, pid):
         # load the bpf program
