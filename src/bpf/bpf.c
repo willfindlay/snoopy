@@ -1,4 +1,4 @@
-#include "bpf/defs.h"
+#include "BPFDIR/defs.h"
 
 #define PID THE_PID
 
@@ -21,24 +21,36 @@
 //BPF_STACK_TRACE(stack_traces, 10240);
 //BPF_HASH(combined_allocs, u64, struct combined_alloc_info_t, 10240);
 
-// perf buffer definitions {{{
-
+/* --- perf buffers --- */
 BPF_PERF_OUTPUT(syscalls);
 
-// }}}
+/* per-cpu map to store in-progress syscalls */
+BPF_PERCPU_ARRAY(ip_syscalls, syscall_data, 1);
 
-// --- hook for system call entry ---
+/* --- hook for system call entry --- */
 
 TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 {
     u64 syscall = args->id;
     u64 pid_tgid = bpf_get_current_pid_tgid();
+    int zero = 0;
 
-    snoopy_sys_enter_data data = {.id=syscall, .pid_tgid=pid_tgid};
+    syscall_data data = {.id=syscall, .pid_tgid=pid_tgid, .args={}, .ret=0};
+
+    for(int i = 0; i < 6; i++)
+    {
+        data.args[i] = args->args[i];
+        char *str_arg = (char*)args->args[i];
+        bpf_probe_read_str(data.str_args[i], sizeof(str_arg), str_arg);
+    }
 
     if((u32)(pid_tgid >> 32) == PID)
     {
-        syscalls.perf_submit((struct pt_regs*)args, &data, sizeof(data));
+        //syscalls.perf_submit((struct pt_regs*)args, &data, sizeof(data));
+        ip_syscalls.update(&zero, &data);
+
+        if(syscall == SYS_EXIT || syscall == SYS_EXIT_GROUP)
+            syscalls.perf_submit((struct pt_regs*)args, &data, sizeof(syscall_data));
     }
 
     return 0;
@@ -49,6 +61,20 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 
 TRACEPOINT_PROBE(raw_syscalls, sys_exit)
 {
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    int zero = 0;
+
+    syscall_data *datap = ip_syscalls.lookup(&zero);
+
+    if(!datap)
+        return 0;
+
+    datap->ret = args->ret;
+
+    if((u32)(pid_tgid >> 32) == PID)
+    {
+        syscalls.perf_submit((struct pt_regs*)args, datap, sizeof(syscall_data));
+    }
 
     return 0;
 }
