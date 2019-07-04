@@ -4,6 +4,7 @@ import sys
 import signal
 
 from bcc import BPF
+import ctypes as ct
 
 import defs
 
@@ -27,7 +28,7 @@ class Program:
         self.bpf = None
 
         # --- binary and arguments ---
-        self.binary = which(binary)
+        self.set_binary(binary)
         self.args = args
 
         # --- preferences ---
@@ -35,11 +36,14 @@ class Program:
 
         self.strace = []
 
+    def set_binary(self, binary):
+        self.binary = which(binary)
+
     def register_perf_outputs(self):
         # syscall entry point
         def on_syscall(cpu, data, size):
             event = self.bpf["syscalls"].event(data)
-            syscall = Syscall(event.id)
+            syscall = Syscall(event.id, args=event.args)
             self.strace.append(syscall)
         self.bpf["syscalls"].open_perf_buffer(on_syscall, 128)
 
@@ -76,9 +80,24 @@ class Program:
 
 class Syscall:
     def __init__(self, num, ret=0, args=[]):
+        name, max_args, argtypes = defs.SYSCALL[num]
         self.num = num
-        self.name = defs.SYSCALL[num]
-        self.args = args
+        self.name = name
+
+        # handle args
+        self.args = list(args)
+        self.args = self.args[:max_args]
+        for i, arg in enumerate(self.args):
+            if argtypes[i] == defs.ARG_INT:
+                self.args[i] = int(self.args[i])
+            elif argtypes[i] == defs.ARG_STR:
+                chars = ct.cast(args[i], ct.c_char_p)
+                self.args[i] = "some string" # FIXME: how the hell do we convert this ulong to a character pointer without segfaulting??
+            elif argtypes[i] == defs.ARG_PTR:
+                self.args[i] = hex(self.args[i])
+            else:
+                self.args[i] = "unknown"
+        self.args = map(str, self.args)
         self.ret = ret
 
     def __str__(self):

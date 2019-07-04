@@ -12,11 +12,11 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 import defs
-from dialogs import ExecutableDialog
 from text_stream import TextStream
-from debugger_model import DebuggerModel
 from program import Program
 from poller import Poller
+
+defs.init()
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     sig_start_worker = Signal(int)
@@ -59,17 +59,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.show()
 
     # --- slots ---
-
     def log_strace(self, strace):
         for syscall in strace:
-            self.console_log(str(syscall))
+            s = f"{defs.color(5)}{syscall.name}{defs.color(0)}({defs.color(1)}{f'{defs.color(0)}, {defs.color(1)}'.join(syscall.args)}{defs.color(0)}) = {syscall.ret}"
+            self.console_log(s)
 
-    def console_log(self, text):
+    def console_log(self, text, color=defs.color(0)):
         now = datetime.datetime.now()
         time_str = now.strftime("[%m/%d/%Y %H:%M:%S]")
         text = "<br>".join(text.split("\n"))
         text = f"{defs.color(6)}^[{defs.color(0)}".join(text.split(""))
-        self.console_output.appendHtml("".join([defs.color(4), time_str, " ", defs.color(0), text]))
+        self.console_output.appendHtml("".join([defs.color(4), time_str, " ", color, text]))
 
     def launch_executable(self):
         self.program.snoopy_exec()
@@ -83,7 +83,6 @@ if __name__ == "__main__":
     if not (os.geteuid() == 0):
         print("This script must be run with root privileges! Exiting.")
         sys.exit(-1)
-    defs.init()
 
     parser = argparse.ArgumentParser(description="Snoopy is a modern GNU/Linux debugger with a simple,\
             easy to use design philosophy. It leverages eBPF technology in modern Linux kernels, rendering\

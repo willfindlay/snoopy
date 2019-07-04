@@ -34,7 +34,12 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
     u64 syscall = args->id;
     u64 pid_tgid = bpf_get_current_pid_tgid();
 
-    snoopy_sys_enter_data data = {.id=syscall, .pid_tgid=pid_tgid};
+    sys_enter_data data = {.id=syscall, .pid_tgid=pid_tgid, .args={}};
+
+    for(int i = 0; i < 6; i++)
+    {
+        data.args[i] = args->args[i];
+    }
 
     if((u32)(pid_tgid >> 32) == PID)
     {
