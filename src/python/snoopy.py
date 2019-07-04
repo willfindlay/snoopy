@@ -11,12 +11,10 @@ from mainwindow import Ui_MainWindow
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-import defs
+import config
 from text_stream import TextStream
 from program import Program
 from poller import Poller
-
-defs.init()
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     sig_start_worker = Signal(int)
@@ -61,15 +59,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # --- slots ---
     def log_strace(self, strace):
         for syscall in strace:
-            s = f"{defs.color(5)}{syscall.name}{defs.color(0)}({defs.color(1)}{f'{defs.color(0)}, {defs.color(1)}'.join(syscall.args)}{defs.color(0)}) = {syscall.ret}"
+            s = f"{config.color(5)}{syscall.name}{config.color(0)}({config.color(1)}{f'{config.color(0)}, {config.color(1)}'.join(syscall.args)}{config.color(0)}) = {syscall.ret}"
             self.console_log(s)
 
-    def console_log(self, text, color=defs.color(0)):
+    def console_log(self, text, color=config.color(0)):
         now = datetime.datetime.now()
         time_str = now.strftime("[%m/%d/%Y %H:%M:%S]")
         text = "<br>".join(text.split("\n"))
-        text = f"{defs.color(6)}^[{defs.color(0)}".join(text.split(""))
-        self.console_output.appendHtml("".join([defs.color(4), time_str, " ", color, text]))
+        text = f"{config.color(6)}^[{config.color(0)}".join(text.split(""))
+        self.console_output.appendHtml("".join([config.color(4), time_str, " ", color, text]))
 
     def launch_executable(self):
         self.program.snoopy_exec()

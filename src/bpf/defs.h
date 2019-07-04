@@ -322,6 +322,8 @@
 #define SYS_FINIT_MODULE 313
 // }}}
 
+#define ARGLEN 64
+
 // perf buffer event data definitions {{{
 
 typedef struct
@@ -329,8 +331,10 @@ typedef struct
     u64 id;
     u64 pid_tgid;
     unsigned long args[6];
+    unsigned char str_args[ARGLEN][6];
+    long ret;
 }
-sys_enter_data;
+syscall_data;
 
 // }}}
 

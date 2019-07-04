@@ -6,7 +6,7 @@ import signal
 from bcc import BPF
 import ctypes as ct
 
-import defs
+import config
 
 def which(binary):
     try:
@@ -42,8 +42,8 @@ class Program:
     def register_perf_outputs(self):
         # syscall entry point
         def on_syscall(cpu, data, size):
-            event = self.bpf["syscalls"].event(data)
-            syscall = Syscall(event.id, args=event.args)
+            event = ct.cast(data, ct.POINTER(SyscallData)).contents
+            syscall = Syscall(event.id, args=event.args, str_args=event.str_args, ret=event.ret)
             self.strace.append(syscall)
         self.bpf["syscalls"].open_perf_buffer(on_syscall, 128)
 
@@ -53,9 +53,10 @@ class Program:
             self.bpf = None
         except:
             pass
-        with open(defs.BPF_FILE) as f:
+        with open(config.BPFFILE) as f:
             text = f.read()
-        text = text.replace("THE_PID", str(self.pid), 1)
+        text = text.replace("THE_PID", str(self.pid))
+        text = text.replace("BPFDIR", str(config.BPFDIR))
         self.bpf = BPF(text = text)
         self.register_perf_outputs()
         os.kill(self.pid, signal.SIGUSR1)
@@ -78,22 +79,29 @@ class Program:
         self.pid = pid
         self.load_bpf()
 
+class SyscallData(ct.Structure):
+    _fields_ = [("id", ct.c_uint64),
+                ("pid_tgid", ct.c_uint64),
+                ("args", ct.c_ulong * 6),
+                ("str_args", (ct.c_char * 64) * 6),
+                ("ret", ct.c_long)]
+
 class Syscall:
-    def __init__(self, num, ret=0, args=[]):
-        name, max_args, argtypes = defs.SYSCALL[num]
+    def __init__(self, num, ret=0, args=[], str_args=[]):
+        name, max_args, argtypes = config.SYSCALL[num]
         self.num = num
         self.name = name
 
         # handle args
         self.args = list(args)
+        str_args = list(str_args)
         self.args = self.args[:max_args]
         for i, arg in enumerate(self.args):
-            if argtypes[i] == defs.ARG_INT:
+            if argtypes[i] == config.ARG_INT:
                 self.args[i] = int(self.args[i])
-            elif argtypes[i] == defs.ARG_STR:
-                chars = ct.cast(args[i], ct.c_char_p)
-                self.args[i] = "some string" # FIXME: how the hell do we convert this ulong to a character pointer without segfaulting??
-            elif argtypes[i] == defs.ARG_PTR:
+            elif argtypes[i] == config.ARG_STR:
+                self.args[i] = f"\"{ct.cast(str_args[i], ct.c_char_p).value.decode('utf-8')}\""
+            elif argtypes[i] == config.ARG_PTR:
                 self.args[i] = hex(self.args[i])
             else:
                 self.args[i] = "unknown"

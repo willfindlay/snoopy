@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # modified from https://github.com/nelhage/ministrace by @nelhage
 
 import os
@@ -65,6 +65,7 @@ def find_args(linux):
   return syscalls
 
 def parse_type(t):
+  print(t)
   if re.search(r'^(const\s*)?char\s*(__user\s*)?\*\s*$', t):
     return "ARG_STR"
   if t.endswith('*'):

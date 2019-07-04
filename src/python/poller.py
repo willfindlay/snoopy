@@ -1,7 +1,5 @@
 from PySide2.QtCore import QObject, Signal
 
-import defs
-
 class Poller(QObject):
     sig_syscalls = Signal(list)
 
