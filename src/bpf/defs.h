@@ -5,6 +5,8 @@
 
 #include <uapi/linux/ptrace.h>
 
+#define ARGLEN 64
+
 // syscall definitions {{{
 #define SYS_READ 0
 #define SYS_WRITE 1
@@ -320,9 +322,27 @@
 #define SYS_PROCESS_VM_WRITEV 311
 #define SYS_KCMP 312
 #define SYS_FINIT_MODULE 313
+#define SYS_SCHED_SETATTR 314
+#define SYS_SCHED_GETATTR 315
+#define SYS_RENAMEAT2 316
+#define SYS_SECCOMP 317
+#define SYS_GETRANDOM 318
+#define SYS_MEMFD_CREATE 319
+#define SYS_KEXEC_FILE_LOAD 320
+#define SYS_BPF 321
+#define SYS_EXECVEAT 322
+#define SYS_USERFAULTFD 323
+#define SYS_MEMBARRIER 324
+#define SYS_MLOCK2 325
+#define SYS_COPY_FILE_RANGE 326
+#define SYS_PREADV2 327
+#define SYS_PWRITEV2 328
+#define SYS_PKEY_MPROTECT 329
+#define SYS_PKEY_ALLOC 330
+#define SYS_PKEY_FREE 331
+#define SYS_STATX 332
+#define SYS_IO_PGETEVENTS 333
 // }}}
-
-#define ARGLEN 64
 
 // perf buffer event data definitions {{{
 
@@ -331,7 +351,7 @@ typedef struct
     u64 id;
     u64 pid_tgid;
     unsigned long args[6];
-    unsigned char str_args[ARGLEN][6];
+    unsigned char str_args[6][ARGLEN];
     long ret;
 }
 syscall_data;

@@ -41,7 +41,7 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
     {
         data.args[i] = args->args[i];
         char *str_arg = (char*)args->args[i];
-        bpf_probe_read_str(data.str_args[i], sizeof(str_arg), str_arg);
+        bpf_probe_read_str(data.str_args[i], ARGLEN, str_arg);
     }
 
     if((u32)(pid_tgid >> 32) == PID)
