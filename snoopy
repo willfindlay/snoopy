@@ -4,4 +4,4 @@ DIR=$(dirname $(readlink -f $0))
 
 unset PYTHONPATH
 #source $DIR/venv/bin/activate # TODO: get this working in pipenv or something to make it portable
-exec sudo /usr/bin/env python3 $DIR/src/python/snoopy.py $*
+exec sudo /usr/bin/env python3 $DIR/src/snoopy/snoopy.py $*

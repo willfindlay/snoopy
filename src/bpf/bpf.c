@@ -1,3 +1,5 @@
+#include <uapi/linux/ptrace.h>
+
 #include "BPFDIR/defs.h"
 
 #define PID THE_PID
@@ -28,7 +30,6 @@ BPF_PERF_OUTPUT(syscalls);
 BPF_PERCPU_ARRAY(ip_syscalls, syscall_data, 1);
 
 /* --- hook for system call entry --- */
-
 TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 {
     u64 syscall = args->id;
@@ -40,8 +41,7 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
     for(int i = 0; i < 6; i++)
     {
         data.args[i] = args->args[i];
-        char *str_arg = (char*)args->args[i];
-        bpf_probe_read_str(data.str_args[i], ARGLEN, str_arg);
+        bpf_probe_read_str(data.str_args[i], ARGLEN, (char *)args->args[i]);
     }
 
     if((u32)(pid_tgid >> 32) == PID)
@@ -57,8 +57,7 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 }
 
 
-// --- hook for system call returns ---
-
+/* --- hook for system call returns --- */
 TRACEPOINT_PROBE(raw_syscalls, sys_exit)
 {
     u64 pid_tgid = bpf_get_current_pid_tgid();

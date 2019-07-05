@@ -59,7 +59,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # --- slots ---
     def log_strace(self, strace):
         for syscall in strace:
-            s = f"{config.color(5)}{syscall.name}{config.color(0)}({config.color(1)}{f'{config.color(0)}, {config.color(1)}'.join(syscall.args)}{config.color(0)}) = {syscall.ret}"
+            s = str(syscall)
             self.console_log(s)
 
     def console_log(self, text, color=config.color(0)):
