@@ -25,6 +25,8 @@ class SyscallFormat:
         self.ret_type = ret_type
 
     def flags(self, possible_flags, value):
+        alternative = possible_flags[0]
+        possible_flags = possible_flags[1:]
         num_flags = len(possible_flags)
 
         all_flags_on = 2 ** num_flags - 1
@@ -34,6 +36,8 @@ class SyscallFormat:
         for i,bit in enumerate(reversed(flag_bits)):
             if bit == '1':
                 flags.append(possible_flags[i])
+            elif i == 0 and alternative is not None:
+                flags.append(alternative)
 
         return "|".join(flags)
 
@@ -60,7 +64,7 @@ class SyscallFormat:
 # I might just add it to bcc utils and make a PR there
 FORMAT[0  ] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[1  ] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
-FORMAT[2  ] = SyscallFormat((ARG_STR, ARG_INT, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
+FORMAT[2  ] = SyscallFormat((ARG_STR, ("O_RDONLY","O_WRONLY","O_CREAT","O_EXCL","O_NOCTTY","O_TRUNC","O_APPEND","O_NONBLOCK","O_DSYNC","FASYNC","O_DIRECT","O_LARGFILE","O_DIRECTORY","O_NONFOLLOW","O_NOATIME","O_CLOEXEC"), ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[3  ] = SyscallFormat((ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[4  ] = SyscallFormat((ARG_STR, ARG_PTR, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[5  ] = SyscallFormat((ARG_INT, ARG_PTR, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
@@ -315,7 +319,7 @@ FORMAT[253] = SyscallFormat((ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN,
 FORMAT[254] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[255] = SyscallFormat((ARG_INT, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[256] = SyscallFormat((ARG_INT, ARG_INT, ARG_PTR, ARG_PTR, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
-FORMAT[257] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
+FORMAT[257] = SyscallFormat((ARG_INT, ARG_STR, ("O_RDONLY","O_WRONLY","O_CREAT","O_EXCL","O_NOCTTY","O_TRUNC","O_APPEND","O_NONBLOCK","O_DSYNC","FASYNC","O_DIRECT","O_LARGFILE","O_DIRECTORY","O_NONFOLLOW","O_NOATIME","O_CLOEXEC"), ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[258] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[259] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_INT, ARG_UNKNOWN, ARG_UNKNOWN), ARG_INT)
 FORMAT[260] = SyscallFormat((ARG_INT, ARG_STR, ARG_INT, ARG_INT, ARG_INT, ARG_UNKNOWN), ARG_INT)
