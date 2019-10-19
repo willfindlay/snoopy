@@ -30,5 +30,4 @@ if __name__ == "__main__":
     # parse args, second try
     args = parser.parse_args()
 
-    print(args)
     snoopy = Snoopy(args)
