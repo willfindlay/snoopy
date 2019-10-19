@@ -1,2 +1,3 @@
 # snoopy
-a debugger written in ebpf using bcc
+
+An eBPF debugger.
