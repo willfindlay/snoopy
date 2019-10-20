@@ -68,6 +68,7 @@ if __name__ == "__main__":
     formatter.datefmt = '%Y-%m-%d %H:%M:%S'
     log.setLevel(logging.DEBUG)
 
+    # Set up logging to file
     if Config.log_file:
         create_parent_dirs(Config.log_file)
         file_handler = logging.handlers.WatchedFileHandler(Config.log_file)
@@ -75,6 +76,7 @@ if __name__ == "__main__":
         file_handler.setFormatter(formatter)
         log.addHandler(file_handler)
 
+    # Set up logging to stderr
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG if args.very_verbose else logging.INFO if args.verbose
             else logging.CRITICAL if args.silent else logging.WARNING)
@@ -93,3 +95,4 @@ if __name__ == "__main__":
     from src.python.snoopy import Snoopy
 
     snoopy = Snoopy(args)
+    snoopy.trace(args.binary, args.args)
