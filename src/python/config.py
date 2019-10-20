@@ -5,3 +5,5 @@ class Config:
 
     syscalls_64_cache = "/var/cache/snoopy/syscalls_64"
     syscalls_32_cache = "/var/cache/snoopy/syscalls_32"
+
+    log_file = "/var/log/snoopy/snoopy.log"

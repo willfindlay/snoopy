@@ -4,12 +4,15 @@ import os, sys
 import re
 import subprocess
 import _pickle as pickle
+import logging
 from collections import defaultdict
 
 from bcc.syscall import syscalls as bcc_syscalls
 
 from .config import Config
 from .utils import create_parent_dirs
+
+log = logging.getLogger()
 
 # Parsing stuff below this line -------------------------
 
@@ -84,6 +87,7 @@ def parse_type(t):
 
 def parse_syscalls(unistd_h, linux):
     syscalls = {}
+    log.info(f"Parsing syscalls from {unistd_h} and {linux}")
     names_dict = parse_names(unistd_h)
     args_dict = parse_args(linux)
 
@@ -100,6 +104,19 @@ class SyscallDefinition:
         self.name = name
         self.num = num
         self.arg_types = types
+
+    def template(self, *args):
+        pargs = []
+        for t, arg in zip(self.arg_types, args):
+            if t == 'ARG_PTR':
+                pargs.append(str(hex(arg)))
+            elif t == 'ARG_STR':
+                pargs.append(f"\"{arg}\"")
+            elif t == 'ARG_INT':
+                pargs.append(str(int(arg)))
+            elif t == 'ARG_UNKNOWN':
+                pargs.append(t)
+        return f"{self.name}({', '.join(pargs)})"
 
     def __repr__(self):
         return f"{self.name}({', '.join(self.arg_types)})"
@@ -118,6 +135,7 @@ def write_to_cache(syscalls_32, syscalls_64):
 
 # Call this in main before importing snoopy
 def init_syscalls(should_update=False):
+    log.debug("Initializing syscalls")
     linux_dir = Config.linux_dir
     unistd_32 = Config.unistd_32
     unistd_64 = Config.unistd_64
@@ -130,25 +148,29 @@ def init_syscalls(should_update=False):
     syscalls_64 = None
 
     # Attempt to open cached version
-    try:
-        with open(Config.syscalls_32_cache, 'rb') as f:
-            syscalls_32 = pickle.load(f)
-    except FileNotFoundError:
-        pass
-    try:
-        with open(Config.syscalls_64_cache, 'rb') as f:
-            syscalls_64 = pickle.load(f)
-    except FileNotFoundError:
-        pass
+    if not should_update:
+        try:
+            with open(Config.syscalls_32_cache, 'rb') as f:
+                syscalls_32 = pickle.load(f)
+                log.info("Using cached version of syscalls_32")
+        except FileNotFoundError:
+            log.debug("Could not find cached version of syscalls_32")
+        try:
+            with open(Config.syscalls_64_cache, 'rb') as f:
+                syscalls_64 = pickle.load(f)
+                log.info("Using cached version of syscalls_64")
+        except FileNotFoundError:
+            log.debug("Could not find cached version of syscalls_64")
 
     # Parse syscalls from the kernel source
-    if syscalls_32 == None or should_update:
+    if not syscalls_32 or should_update:
         syscalls_32 = parse_syscalls(unistd_32, linux_dir)
         should_cache = True
-    if syscalls_64 == None or should_update:
+    if not syscalls_64 or should_update:
         syscalls_64 = parse_syscalls(unistd_64, linux_dir)
         should_cache = True
 
     # Cache the syscalls
     if should_cache:
+        log.info("Writing to syscall cache")
         write_to_cache(syscalls_32, syscalls_64)

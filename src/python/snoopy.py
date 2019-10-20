@@ -11,5 +11,4 @@ from .syscall import syscalls_32, syscalls_64
 
 class Snoopy:
     def __init__(self, args):
-        for call in syscalls_64.values():
-            print(call)
+        pass
