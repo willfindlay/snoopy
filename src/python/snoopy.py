@@ -12,6 +12,7 @@ from bcc import BPF
 from .config import Config
 from .utils import abs_headers, drop_privileges, c_dir, which
 from .syscall import syscalls_32, syscalls_64
+from .structs import Syscall as syscall_struct
 
 log = logging.getLogger()
 
@@ -80,10 +81,18 @@ class Snoopy:
 
         # executable has been processed in ebpH_on_do_open_execat
         def on_syscall(cpu, data, size):
-            event = bpf["on_syscall"].event(data)
+            event = ct.cast(data, ct.POINTER(syscall_struct)).contents
             syscall = syscalls_64[event.num]
-            args = event.args
-            s = f"{syscalls_64[event.num].template(*[arg for arg in args])}"
+            args = []
+            for t, arg, str_arg in zip(syscall.arg_types, event.args, event.str_args):
+                if t == 'ARG_STR':
+                    b = (str_arg.value)
+                    if len(b) > 60:
+                        b = b[:60] + b' ...'
+                    args.append(repr(b)[2:-1])
+                else:
+                    args.append(arg)
+            s = f"{syscalls_64[event.num].template(*args)}"
             print(s)
         bpf["on_syscall"].open_perf_buffer(on_syscall, lost_cb=lost_cb("on_syscall"), page_cnt=2**8)
 
