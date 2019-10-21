@@ -94,6 +94,6 @@ class Snoopy:
                     args.append(arg)
             s = f"{syscalls_64[event.num].template(*args)}"
             print(s)
-        bpf["on_syscall"].open_perf_buffer(on_syscall, lost_cb=lost_cb("on_syscall"), page_cnt=2**8)
+        bpf["on_syscall"].open_perf_buffer(on_syscall, lost_cb=lost_cb("on_syscall"), page_cnt=2**16)
 
         log.debug(f'Registered perf buffers successfully')
