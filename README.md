@@ -1,3 +1,3 @@
 # snoopy
 
-An eBPF debugger.
+An eBPF-based debugger. WIP, comes with no warranty
