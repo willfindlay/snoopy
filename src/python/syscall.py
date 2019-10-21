@@ -113,7 +113,7 @@ class SyscallDefinition:
             elif t == 'ARG_STR':
                 pargs.append(f"\"{arg}\"")
             elif t == 'ARG_INT':
-                pargs.append(str(int(arg)))
+                pargs.append(str(arg))
             elif t == 'ARG_UNKNOWN':
                 pargs.append(t)
         return f"{self.name}({', '.join(pargs)})"
