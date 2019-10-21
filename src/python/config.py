@@ -1,4 +1,6 @@
 class Config:
+    shell = "/bin/zsh"
+
     linux_dir = "/usr/src/linux"
     unistd_32 = "/usr/include/asm/unistd_32.h"
     unistd_64 = "/usr/include/asm/unistd_64.h"

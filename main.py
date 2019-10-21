@@ -79,7 +79,7 @@ if __name__ == "__main__":
     # Set up logging to stderr
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG if args.very_verbose else logging.INFO if args.verbose
-            else logging.CRITICAL if args.silent else logging.WARNING)
+            else logging.ERROR if args.silent else logging.WARNING)
     stream_formatter = logging.Formatter('%(levelname)s: %(message)s')
     stream_handler.setFormatter(stream_formatter)
     log.addHandler(stream_handler)
