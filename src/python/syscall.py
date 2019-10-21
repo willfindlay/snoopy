@@ -75,6 +75,15 @@ def parse_define(syscalls, text):
             types = argspec[0:len(argspec):2]
         else:
             types = []
+    # Manual overrides
+    if name == 'mmap':
+        types[0] = 'void *'
+    if name == 'mprotect':
+        types[0] = 'void *'
+    if name == 'brk':
+        types[0] = 'void *'
+    if name == 'sbrk':
+        types[0] = 'void *'
     types = [parse_type(t) for t in types]
     syscalls[name] = types
 

@@ -6,7 +6,8 @@
 struct syscall
 {
     long num;
-    unsigned long args[6];
+    unsigned long args[SNOOPY_NUM_ARGS];
+    unsigned char str_args[SNOOPY_NUM_ARGS][SNOOPY_ARGLEN];
     long ret;
 };
 
