@@ -1,6 +1,6 @@
 # snoopy
 
-An eBPF-based debugger. Competitor to strace. WIP, comes with no warranty
+An eBPF-based debugger. Competitor to strace. WIP, comes with no warranty.
 
 ## Requirements
 
