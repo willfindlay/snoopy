@@ -5,6 +5,7 @@
 BPF_ARRAY(__syscall_init, struct syscall, 1);
 
 BPF_PERF_OUTPUT(on_syscall);
+BPF_PERF_OUTPUT(on_syscall_return);
 
 TRACEPOINT_PROBE(raw_syscalls, sys_enter)
 {
@@ -35,6 +36,10 @@ TRACEPOINT_PROBE(raw_syscalls, sys_exit)
     u32 pid = bpf_get_current_pid_tgid() >> 32;
     if (pid != TRACE_PID)
         return 0;
+
+    struct syscall_ret ret = {.ret=args->ret};
+
+    on_syscall_return.perf_submit((struct pt_regs *) args, &ret, sizeof(struct syscall_ret));
 
     return 0;
 }

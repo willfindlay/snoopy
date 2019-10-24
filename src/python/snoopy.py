@@ -6,19 +6,22 @@ import re
 import signal
 import logging
 import ctypes as ct
+from collections import defaultdict
 
 from bcc import BPF
 
 from .config import Config
 from .utils import abs_headers, drop_privileges, c_dir, which
-from .syscall import syscalls_32, syscalls_64
-from .structs import Syscall as syscall_struct
+from .syscall import syscalls_32, syscalls_64, Syscall
+from .structs import Syscall as syscall_struct, SyscallReturn as syscall_ret_struct
+from .cpu import CPU
 
 log = logging.getLogger()
 
 class Snoopy:
     def __init__(self, args):
         self.bpf = None
+        self.cpus = defaultdict(CPU)
 
     def trace(self, binary, args):
         # Run the tracee and pause before execve until ready
@@ -79,12 +82,13 @@ class Snoopy:
                 log.warning(f"Lost {lost} samples from perf_buffer {buff_name}")
             return closure
 
-        # executable has been processed in ebpH_on_do_open_execat
+        # Push new systemcall onto the per-cpu queue
         def on_syscall(cpu, data, size):
             event = ct.cast(data, ct.POINTER(syscall_struct)).contents
-            syscall = syscalls_64[event.num]
+            syscall_def = syscalls_64[event.num]
             args = []
-            for t, arg, str_arg in zip(syscall.arg_types, event.args, event.str_args):
+            # Parse args from struct
+            for t, arg, str_arg in zip(syscall_def.arg_types, event.args, event.str_args):
                 if t == 'ARG_STR':
                     b = (str_arg.value)
                     if len(b) > 60:
@@ -92,8 +96,16 @@ class Snoopy:
                     args.append(repr(b)[2:-1])
                 else:
                     args.append(arg)
-            s = f"{syscalls_64[event.num].template(*args)}"
-            print(s)
-        bpf["on_syscall"].open_perf_buffer(on_syscall, lost_cb=lost_cb("on_syscall"), page_cnt=2**16)
+            syscall = Syscall(syscall_def, args)
+            self.cpus[cpu].call(syscall)
+        bpf["on_syscall"].open_perf_buffer(on_syscall, lost_cb=lost_cb("on_syscall"), page_cnt=2**8)
+
+        def on_syscall_return(cpu, data, size):
+            event = ct.cast(data, ct.POINTER(syscall_ret_struct)).contents
+            syscall = self.cpus[cpu].calls[self.cpus[cpu].pos]
+            self.cpus[cpu].pos += 1
+            syscall._return(event.ret)
+            print(syscall)
+        bpf["on_syscall_return"].open_perf_buffer(on_syscall_return, lost_cb=lost_cb("on_syscall_return"), page_cnt=2**8)
 
         log.debug(f'Registered perf buffers successfully')

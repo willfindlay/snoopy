@@ -84,6 +84,8 @@ def parse_define(syscalls, text):
         types[0] = 'void *'
     if name == 'sbrk':
         types[0] = 'void *'
+    if name == 'arch_prctl':
+        types[0] = 'void *'
     types = [parse_type(t) for t in types]
     syscalls[name] = types
 
@@ -108,13 +110,27 @@ def parse_syscalls(unistd_h, linux):
 
     return syscalls
 
+class Syscall:
+    def __init__(self, definition, args, ret=None):
+        assert(type(definition) == SyscallDefinition)
+        self.definition = definition
+        self.args = args
+        self.ret = ret
+
+    def _return(self, ret):
+        self.ret = ret
+
+    def __repr__(self):
+        return self.definition.template(*self.args, ret=self.ret)
+
 class SyscallDefinition:
     def __init__(self, num, name, types):
         self.name = name
         self.num = num
         self.arg_types = types
+        self.ret_type = 'ARG_INT' # TODO: change this later to allow for pointers
 
-    def template(self, *args):
+    def template(self, *args, ret=None):
         pargs = []
         for t, arg in zip(self.arg_types, args):
             if t == 'ARG_PTR':
@@ -125,7 +141,10 @@ class SyscallDefinition:
                 pargs.append(str(arg))
             elif t == 'ARG_UNKNOWN':
                 pargs.append(t)
-        return f"{self.name}({', '.join(pargs)})"
+        if ret is not None:
+            # TODO: change this later to allow for pointers
+            ret = str(ret)
+        return f"{self.name}({', '.join(pargs)}) = {'?' if ret == None else ret}"
 
     def __repr__(self):
         return f"{self.name}({', '.join(self.arg_types)})"
